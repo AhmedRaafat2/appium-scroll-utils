@@ -61,7 +61,7 @@ public class Swipe {
      *
      * @param direction   Direction of the swipe.
      * @param speed       Speed of the swipe.
-     * @param repeatCount Number of times to repeat the swipe. Must be >= 1.
+     * @param repeatCount Number of times to repeat the swipe. Must be greater than or equal to 1.
      * @throws IllegalArgumentException if repeatCount is less than 1.
      */
     public void swipeMultiple(Directions direction, Speed speed, int repeatCount) {
