@@ -43,7 +43,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <gpg.executable>gpg</gpg.executable>
         <gpg.passphrase>${gpg.passphrase}</gpg.passphrase>
-        <gpg.keyname>${gpg.keyname}</gpg.keyname>
     </properties>
 
     <build>
