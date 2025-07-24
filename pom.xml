@@ -1,22 +1,18 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.ahmedraafat2</groupId>
     <artifactId>appium-scroll-utils</artifactId>
     <version>1.0.1</version>
-    <packaging>jar</packaging>
-
     <name>Appium Scroll Utils</name>
-    <description>Java utilities for scrolling in Appium/Selenium mobile automation.</description>
-    <url>https://github.com/AhmedRaafat2/appium-scroll-utils</url>
+    <description>Helper for Appium scrolling in Android</description>
+    <url>https://github.com/ahmedraafat2/appium-scroll-utils</url>
 
     <licenses>
         <license>
-            <name>MIT License</name>
+            <name>The MIT License</name>
             <url>https://opensource.org/licenses/MIT</url>
         </license>
     </licenses>
@@ -25,34 +21,30 @@
         <developer>
             <id>ahmedraafat2</id>
             <name>Ahmed Raafat</name>
-            <email>AhmedRaafat4Work@gmail.com</email>
+            <email>ahmedraafat2@gmail.com</email>
         </developer>
     </developers>
 
     <scm>
-        <url>https://github.com/AhmedRaafat2/appium-scroll-utils</url>
-        <connection>scm:git:git://github.com/AhmedRaafat2/appium-scroll-utils.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:AhmedRaafat2/appium-scroll-utils.git</developerConnection>
+        <connection>scm:git:git://github.com/ahmedraafat2/appium-scroll-utils.git</connection>
+        <developerConnection>scm:git:ssh://github.com/ahmedraafat2/appium-scroll-utils.git</developerConnection>
+        <url>https://github.com/ahmedraafat2/appium-scroll-utils</url>
+        <tag>HEAD</tag>
     </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <url>https://central.sonatype.com/api/v1/publish</url>
+        </repository>
+    </distributionManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <gpg.executable>gpg</gpg.executable>
+        <gpg.passphrase>${gpg.passphrase}</gpg.passphrase>
+        <gpg.keyname>${gpg.keyname}</gpg.keyname>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.appium</groupId>
-            <artifactId>java-client</artifactId>
-            <version>9.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.seleniumhq.selenium</groupId>
-            <artifactId>selenium-java</artifactId>
-            <version>4.34.0</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
@@ -63,23 +55,12 @@
                 <executions>
                     <execution>
                         <id>attach-sources</id>
-                        <goals><goal>jar</goal></goals>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.6.3</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals><goal>jar</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
@@ -88,9 +69,19 @@
                     <execution>
                         <id>sign-artifacts</id>
                         <phase>verify</phase>
-                        <goals><goal>sign</goal></goals>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.1.2</version>
+                <configuration>
+                    <retryFailedDeploymentCount>3</retryFailedDeploymentCount>
+                </configuration>
             </plugin>
         </plugins>
     </build>
