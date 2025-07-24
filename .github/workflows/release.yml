@@ -1,4 +1,4 @@
-name: Publish to Maven Central via Central Portal
+name: Publish to Maven Central
 
 on:
   push:
@@ -7,9 +7,11 @@ on:
 
 jobs:
   publish:
+    name: Build and Publish to Maven Central
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Java
@@ -17,30 +19,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'maven'
+          server-id: ossrh
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_TOKEN
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Import GPG key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | base64 --decode | gpg --batch --import
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg.conf
-          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-
-      - name: Set GPG signing key
-        run: |
-          KEY_ID=$(gpg --list-secret-keys --keyid-format=long | grep sec | awk '{print $2}' | cut -d'/' -f2)
-          echo "GPG_KEY_ID=$KEY_ID" >> $GITHUB_ENV
-
-      - name: Build with GPG signing
-        run: |
-          mvn clean verify -P release -Dgpg.keyname=$GPG_KEY_ID -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" --batch-mode --no-transfer-progress
-
-      - name: Upload to Central via curl
-        run: |
-          TAG_NAME=${GITHUB_REF##*/}
-          VERSION=${TAG_NAME#v}
-          FILES=$(ls target/appium-scroll-utils-${VERSION}*)
-          for file in $FILES; do
-            echo "Uploading $file"
-            curl -u "${{ secrets.CENTRAL_TOKEN }}:" \
-              -X POST "https://central.sonatype.com/api/v1/publisher/upload" \
-              -F bundle=@$file
-          done
+      - name: Build and deploy
+        run: mvn clean deploy -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" --batch-mode --no-transfer-progress

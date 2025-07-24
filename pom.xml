@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>io.github.ahmedraafat2</groupId>
     <artifactId>appium-scroll-utils</artifactId>
     <version>1.0.1</version>
@@ -30,7 +32,7 @@
 
     <scm>
         <url>https://github.com/AhmedRaafat2/appium-scroll-utils</url>
-        <connection>scm:git:git://github.com/AhmedRaafat2/appium-scroll-utils.git</connection>
+        <connection>scm:git:https://github.com/AhmedRaafat2/appium-scroll-utils.git</connection>
         <developerConnection>scm:git:ssh://git@github.com:AhmedRaafat2/appium-scroll-utils.git</developerConnection>
     </scm>
 
@@ -62,9 +64,7 @@
                 <executions>
                     <execution>
                         <id>attach-sources</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
+                        <goals><goal>jar</goal></goals>
                     </execution>
                 </executions>
             </plugin>
@@ -76,9 +76,7 @@
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
+                        <goals><goal>jar</goal></goals>
                     </execution>
                 </executions>
             </plugin>
@@ -91,11 +89,15 @@
                     <execution>
                         <id>sign-artifacts</id>
                         <phase>verify</phase>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
+                        <goals><goal>sign</goal></goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.1.2</version>
             </plugin>
         </plugins>
     </build>
