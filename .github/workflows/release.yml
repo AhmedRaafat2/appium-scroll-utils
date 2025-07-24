@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    name: Build and Publish to Maven Central
+    name: Publish via Central Portal
     runs-on: ubuntu-latest
 
     steps:
@@ -20,11 +20,17 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-          server-id: ossrh
-          server-username: OSSRH_USERNAME
-          server-password: OSSRH_TOKEN
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Build and deploy
-        run: mvn clean deploy -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" --batch-mode --no-transfer-progress
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Publish to Maven Central via GitHub Workflow
+        run: |
+          mvn clean deploy -P release -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" --batch-mode --no-transfer-progress
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_PORTAL_TOKEN }}
