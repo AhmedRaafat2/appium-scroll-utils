@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    name: Build and Publish
+    name: Build and Publish to Maven Central
     runs-on: ubuntu-latest
 
     steps:
@@ -20,19 +20,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
+          server-id: sonatype-central
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_TOKEN
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Copy settings.xml
-        run: |
-          mkdir -p ~/.m2
-          cp .m2/settings.xml ~/.m2/settings.xml
-
-      - name: Import GPG Key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-          gpg --list-secret-keys --keyid-format LONG
-
-      - name: Build with Maven and Sign Artifacts
-        run: mvn clean install -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
-
-      - name: Publish to Sonatype OSSRH
-        run: mvn deploy -P release -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
+      - name: Build and deploy to Maven Central
+        run: mvn clean deploy -P release -Dgpg.passphrase="${{ secrets.GPG_PASSPHRASE }}" --batch-mode --no-transfer-progress
