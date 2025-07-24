@@ -20,7 +20,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
-          server-id: sonatype-central
+          server-id: ossrh  # ✅ لازم يطابق اللي في pom.xml
           server-username: OSSRH_USERNAME
           server-password: OSSRH_TOKEN
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
