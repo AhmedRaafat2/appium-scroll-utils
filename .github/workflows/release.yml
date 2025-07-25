@@ -30,28 +30,6 @@ jobs:
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
           gpg --list-keys
 
-      - name: Sign artifacts
-        run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          cp pom.xml target/appium-scroll-utils-$VERSION.pom
-          for file in target/appium-scroll-utils-$VERSION*.{jar,pom}; do
-            gpg --batch --yes --armor --pinentry-mode loopback \
-              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
-              --output "$file.asc" --detach-sign "$file"
-          done
-
-
-
-
-      - name: Upload to GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            target/appium-scroll-utils-*.jar
-            target/appium-scroll-utils-*.pom
-            target/appium-scroll-utils-*.jar.asc
-            target/appium-scroll-utils-*.pom.asc
-
       - name: Prepare variables
         id: vars
         run: |
@@ -66,13 +44,27 @@ jobs:
           cp target/appium-scroll-utils-${{ steps.vars.outputs.VERSION }}* \
             ${{ steps.vars.outputs.target_path }}
 
-      - name: Generate checksum files
+      - name: Sign & checksum files
         run: |
           cd "${{ steps.vars.outputs.target_path }}"
-          for file in *.{jar,pom}; do
+          
+          # Sign
+          for file in appium-scroll-utils-${{ steps.vars.outputs.VERSION }}.{jar,sources.jar,javadoc.jar,pom}; do
+            gpg --batch --yes --armor --pinentry-mode loopback \
+              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+              --output "$file.asc" --detach-sign "$file"
+          done
+
+          # Generate checksums
+          for file in *.jar *.pom; do
             md5sum "$file" > "$file.md5"
             sha1sum "$file" > "$file.sha1"
           done
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.vars.outputs.target_path }}/*
 
       - name: Create zip bundle
         run: |
