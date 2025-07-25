@@ -5,17 +5,15 @@
 
     <groupId>io.github.ahmedraafat2</groupId>
     <artifactId>appium-scroll-utils</artifactId>
-    <version>1.0.33</version>
-    <packaging>jar</packaging>
-
+    <version>1.0.34</version>
     <name>Appium Scroll Utils</name>
-    <description>Utility library for scroll gestures in Appium</description>
-    <url>https://github.com/ahmedraafat2/appium-scroll-utils</url>
+    <description>Utilities for scrolling using Appium</description>
+    <url>https://github.com/AhmedRaafat2/appium-scroll-utils</url>
 
     <licenses>
         <license>
-            <name>Apache License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
         </license>
     </licenses>
 
@@ -23,20 +21,69 @@
         <developer>
             <id>ahmedraafat2</id>
             <name>Ahmed Raafat</name>
-            <url>https://github.com/ahmedraafat2</url>
+            <url>https://github.com/AhmedRaafat2</url>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/ahmedraafat2/appium-scroll-utils.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/ahmedraafat2/appium-scroll-utils.git</developerConnection>
-        <url>https://github.com/ahmedraafat2/appium-scroll-utils</url>
+        <url>https://github.com/AhmedRaafat2/appium-scroll-utils</url>
+        <connection>scm:git:git://github.com/AhmedRaafat2/appium-scroll-utils.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:AhmedRaafat2/appium-scroll-utils.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
-        <downloadUrl>https://github.com/ahmedraafat2/appium-scroll-utils/releases</downloadUrl>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo1.maven.org/maven2</url>
+        </repository>
     </distributionManagement>
+
+    <build>
+        <plugins>
+            <!-- Signing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Central publishing metadata -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals><goal>jar</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -57,31 +104,5 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals><goal>jar</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.6.3</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals><goal>jar</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>
