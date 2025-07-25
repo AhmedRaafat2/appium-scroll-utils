@@ -38,33 +38,31 @@ jobs:
           GROUP_PATH="io/github/ahmedraafat2/appium-scroll-utils/$VERSION"
           echo "target_path=target/$GROUP_PATH" >> $GITHUB_OUTPUT
 
-      - name: Create final path and move + sign + checksum
+      - name: Create final path and sign + checksum
         run: |
-          mkdir -p ${{ steps.vars.outputs.target_path }}
-          cd target
-
           VERSION="${{ steps.vars.outputs.VERSION }}"
-          FINAL=io/github/ahmedraafat2/appium-scroll-utils/$VERSION
+          FINAL_PATH="target/io/github/ahmedraafat2/appium-scroll-utils/$VERSION"
+          mkdir -p "$FINAL_PATH"
 
-          # Move all needed files
-          cp appium-scroll-utils-$VERSION.jar $FINAL/
-          cp appium-scroll-utils-$VERSION-javadoc.jar $FINAL/
-          cp appium-scroll-utils-$VERSION-sources.jar $FINAL/
-          cp ../pom.xml $FINAL/appium-scroll-utils-$VERSION.pom
+          # Copy artifacts
+          cp target/appium-scroll-utils-$VERSION.jar "$FINAL_PATH/"
+          cp target/appium-scroll-utils-$VERSION-javadoc.jar "$FINAL_PATH/"
+          cp target/appium-scroll-utils-$VERSION-sources.jar "$FINAL_PATH/"
+          cp pom.xml "$FINAL_PATH/appium-scroll-utils-$VERSION.pom"
 
-          cd $FINAL
+          cd "$FINAL_PATH"
 
-          # Sign
+          # Sign JARs and POM
           for file in *.jar *.pom; do
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
               --output "$file.asc" --detach-sign "$file"
           done
 
-          # Checksums
+          # Create clean-format checksums (hash only, no filename)
           for file in *.jar *.pom; do
-            md5sum "$file" > "$file.md5"
-            sha1sum "$file" > "$file.sha1"
+            md5sum "$file" | awk '{ print $1 }' > "$file.md5"
+            sha1sum "$file" | awk '{ print $1 }' > "$file.sha1"
           done
 
       - name: Upload to GitHub Releases
@@ -77,10 +75,8 @@ jobs:
           cd target
           zip -r ../appium-scroll-utils-bundle.zip io
 
-
       - name: Upload bundle to Maven Central
         run: |
           curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
             -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
             -F "bundle=@appium-scroll-utils-bundle.zip"
-
