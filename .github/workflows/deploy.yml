@@ -1,13 +1,16 @@
-name: Release to GitHub for Central Publishing
+name: Deploy to Maven Central
 
 on:
   push:
     tags:
-      - 'v*'  # مثل v1.0.2
+      - 'v*'  # ينفذ فقط عند عمل tag زي v1.0.0
 
 jobs:
-  release:
+  deploy:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # ضروري علشان يرفع لـ GitHub Releases
 
     steps:
       - uses: actions/checkout@v4
@@ -18,8 +21,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build and package
+      - name: Build Project
         run: mvn clean package -DskipTests=true
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
 
       - name: Sign Artifacts
         run: |
@@ -29,21 +36,11 @@ jobs:
               --output "$file.asc" --detach-sign "$file"
           done
 
-      - name: Generate release.properties
-        run: |
-          echo "coordinates=io.github.ahmedraafat2:appium-scroll-utils:jar:${GITHUB_REF_NAME#v}" > release.properties
-          echo "scm.url=https://github.com/ahmedraafat2/appium-scroll-utils" >> release.properties
-          echo "scm.connection=scm:git:https://github.com/ahmedraafat2/appium-scroll-utils.git" >> release.properties
-          echo "scm.developerConnection=scm:git:ssh://git@github.com/ahmedraafat2/appium-scroll-utils.git" >> release.properties
-
-      - name: Upload release to GitHub
-        uses: softprops/action-gh-release@v1
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/appium-scroll-utils-*.jar
-            target/appium-scroll-utils-*.jar.asc
-            target/appium-scroll-utils-*.pom
-            target/appium-scroll-utils-*.pom.asc
-            release.properties
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            target/*.jar
+            target/*.jar.asc
+            target/*.pom
+            target/*.pom.asc
