@@ -1,26 +1,27 @@
-name: Publish to Maven Central (New Central Portal)
+name: Deploy to Maven Central
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'  # Runs when a tag like v1.0.0 is pushed
 
 jobs:
-  publish:
-    name: Publish to Maven Central
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '17'
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          server-id: ossrh
+          server-username: ${{ secrets.OSSRH_USERNAME }}
+          server-password: ${{ secrets.OSSRH_PASSWORD }}
 
-      - name: Build and publish with Maven Central
-        run: mvn deploy -Prelease
-        env:
-          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-          SONATYPE_TOKEN: ${{ secrets.SONATYPE_TOKEN }}
+      - name: Deploy with Maven
+        run: mvn clean deploy -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} -DskipTests=true

@@ -30,7 +30,7 @@
 
     <scm>
         <connection>scm:git:https://github.com/ahmedraafat2/appium-scroll-utils.git</connection>
-        <developerConnection>scm:git:ssh://github.com/ahmedraafat2/appium-scroll-utils.git</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/ahmedraafat2/appium-scroll-utils.git</developerConnection>
         <url>https://github.com/ahmedraafat2/appium-scroll-utils</url>
         <tag>HEAD</tag>
     </scm>
@@ -39,6 +39,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <gpg.executable>gpg</gpg.executable>
+        <gpg.keyname>${gpg.keyname}</gpg.keyname>
+        <gpg.passphrase>${gpg.passphrase}</gpg.passphrase>
     </properties>
 
     <dependencies>
@@ -53,4 +56,65 @@
             <version>4.22.0</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- GPG Signing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Source Jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Javadoc Jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 </project>
