@@ -33,7 +33,7 @@ jobs:
       - name: Generate and Sign Artifacts
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          mvn help:effective-pom -Doutput=target/appium-scroll-utils-$VERSION.pom
+          cp pom.xml target/appium-scroll-utils-$VERSION.pom
           for file in target/appium-scroll-utils-$VERSION*.{jar,pom}; do
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
@@ -49,6 +49,14 @@ jobs:
             target/appium-scroll-utils-*.jar.asc
             target/appium-scroll-utils-*.pom.asc
 
+      - name: Create central-bundle.zip
+        run: |
+          mkdir -p bundle
+          cp target/appium-scroll-utils-*.jar bundle/
+          cp target/appium-scroll-utils-*.jar.asc bundle/
+          cp target/appium-scroll-utils-*.pom bundle/
+          cp target/appium-scroll-utils-*.pom.asc bundle/
+          zip -r central-bundle.zip bundle
 
       - name: Deploy bundle via API
         run: |
