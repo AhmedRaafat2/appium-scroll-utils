@@ -44,19 +44,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/appium-scroll-utils-1.0.32.jar
-            target/appium-scroll-utils-1.0.32-sources.jar
-            target/appium-scroll-utils-1.0.32-javadoc.jar
-            target/appium-scroll-utils-1.0.32.pom
-            target/appium-scroll-utils-1.0.32.jar.asc
-            target/appium-scroll-utils-1.0.32-sources.jar.asc
-            target/appium-scroll-utils-1.0.32-javadoc.jar.asc
-            target/appium-scroll-utils-1.0.32.pom.asc
+            target/appium-scroll-utils-1.0.33.jar
+            target/appium-scroll-utils-1.0.33-sources.jar
+            target/appium-scroll-utils-1.0.33-javadoc.jar
+            target/appium-scroll-utils-1.0.33.pom
+            target/appium-scroll-utils-1.0.33.jar.asc
+            target/appium-scroll-utils-1.0.33-sources.jar.asc
+            target/appium-scroll-utils-1.0.33-javadoc.jar.asc
+            target/appium-scroll-utils-1.0.33.pom.asc
           
-
-      - name: Publish to Maven Central (Central Portal)
-        uses: sonatype-nexus-community/publish-central-action@v1
-        with:
-          coordinates: io.github.ahmedraafat2:appium-scroll-utils
-          version: 1.0.32
-          staging: false
