@@ -5,88 +5,72 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
-
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: 11
+          distribution: temurin
+          java-version: 17
 
-      - name: Build with Maven
-        run: mvn clean install -DskipTests
+      - name: Build and package
+        run: mvn clean package source:jar javadoc:jar -DskipTests
 
-      - name: Set version and paths
-        id: vars
-        run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          ARTIFACT_ID="appium-scroll-utils"
-          GROUP_ID="io.github.ahmedraafat2"
-          GROUP_PATH=$(echo "$GROUP_ID" | tr '.' '/')
-          TARGET_PATH="$GROUP_PATH/$ARTIFACT_ID/$VERSION"
-
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
-          echo "group_id=$GROUP_ID" >> "$GITHUB_OUTPUT"
-          echo "group_path=$GROUP_PATH" >> "$GITHUB_OUTPUT"
-          echo "target_path=$TARGET_PATH" >> "$GITHUB_OUTPUT"
-
-      - name: Prepare artifacts
-        run: |
-          mkdir -p ${{ steps.vars.outputs.target_path }}
-
-          cp target/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.jar ${{ steps.vars.outputs.target_path }}/
-          cp target/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-sources.jar ${{ steps.vars.outputs.target_path }}/
-          cp target/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-javadoc.jar ${{ steps.vars.outputs.target_path }}/
-          cp pom.xml ${{ steps.vars.outputs.target_path }}/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.pom
-
-      - name: Import GPG key
+      - name: Import GPG Key
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
-          gpg --list-secret-keys
+          gpg --list-keys
 
-      - name: Sign + checksum files
+      - name: Sign artifacts
         run: |
-          FILES=(
-            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.jar"
-            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-sources.jar"
-            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-javadoc.jar"
-            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.pom"
-          )
-
-          cd "${{ steps.vars.outputs.target_path }}"
-          for file in "${FILES[@]}"; do
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          cp pom.xml target/appium-scroll-utils-$VERSION.pom
+          for file in target/appium-scroll-utils-$VERSION*.{jar,pom}; do
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
               --output "$file.asc" --detach-sign "$file"
-
-            md5sum "$file" | cut -d ' ' -f 1 > "$file.md5"
-            sha1sum "$file" | cut -d ' ' -f 1 > "$file.sha1"
           done
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            target/appium-scroll-utils-*.jar
+            target/appium-scroll-utils-*.pom
+            target/appium-scroll-utils-*.jar.asc
+            target/appium-scroll-utils-*.pom.asc
+
+      - name: Prepare variables
+        id: vars
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          GROUP_PATH="io/github/ahmedraafat2/appium-scroll-utils/$VERSION"
+          echo "target_path=target/$GROUP_PATH" >> $GITHUB_OUTPUT
+
+      - name: Create target path and move files
+        run: |
+          mkdir -p ${{ steps.vars.outputs.target_path }}
+          cp target/appium-scroll-utils-${{ steps.vars.outputs.VERSION }}* \
+            ${{ steps.vars.outputs.target_path }}
 
       - name: Create zip bundle
         run: |
-          cd "${{ steps.vars.outputs.group_path }}"
-          zip -r ../../central-bundle.zip .
+          cd "${{ steps.vars.outputs.target_path }}"
+          zip -r ../../../central-bundle.zip .
 
-      - name: Upload to Maven Central
-        uses: actions/upload-artifact@v4
-        with:
-          name: central-bundle
-          path: central-bundle.zip
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "Release ${{ steps.vars.outputs.version }}"
-          tag_name: "v${{ steps.vars.outputs.version }}"
-          files: central-bundle.zip
+      - name: Upload bundle to Maven Central
+        run: |
+          curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
+            -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
+            -F "bundle=@../../../central-bundle.zip"
