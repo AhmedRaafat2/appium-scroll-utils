@@ -48,3 +48,13 @@ jobs:
             target/appium-scroll-utils-*.pom
             target/appium-scroll-utils-*.jar.asc
             target/appium-scroll-utils-*.pom.asc
+
+      - name: Upload to Central (Sonatype)
+        env:
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          curl -X POST https://central.sonatype.com/api/v1/publish/github \
+            -H "Authorization: Bearer $MAVEN_CENTRAL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"coordinates\":{\"groupId\":\"io.github.ahmedraafat2\",\"artifactId\":\"appium-scroll-utils\",\"version\":\"$VERSION\"}}"
