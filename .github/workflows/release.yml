@@ -1,46 +1,55 @@
-name: Release to Maven Central
+name: Release to GitHub & Maven Central
 
 on:
-  release:
-    types: [released]
-
-permissions:
-  contents: read
+  push:
+    tags:
+      - 'v*'
 
 jobs:
-  publish:
-    name: Publish to Maven Central via Central Portal
+  release:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # Needed for uploading assets to the release
+      contents: write
 
     steps:
-      - name: Checkout source code
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: 11
+          distribution: temurin
+          java-version: 17
 
-      - name: Build & Package
-        run: mvn -B clean package source:jar javadoc:jar -DskipTests
+      - name: Build and package
+        run: mvn clean package source:jar javadoc:jar -DskipTests
 
-      - name: Sign Artifacts
-        uses: s4u/pgp-sign-action@v1.1.0
-        with:
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          artifacts: |
-            target/*.jar
-            target/*.pom
+      - name: Import GPG Key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-keys
 
-      - name: Upload signed artifacts to GitHub Release
+      - name: Generate and Sign Artifacts
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          mvn help:effective-pom -Doutput=target/appium-scroll-utils-$VERSION.pom
+          for file in target/appium-scroll-utils-$VERSION*.{jar,pom}; do
+            gpg --batch --yes --armor --pinentry-mode loopback \
+              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+              --output "$file.asc" --detach-sign "$file"
+          done
+
+      - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/*.jar
-            target/*.pom
-            target/*.asc
+            target/appium-scroll-utils-*.jar
+            target/appium-scroll-utils-*-sources.jar
+            target/appium-scroll-utils-*-javadoc.jar
+            target/appium-scroll-utils-*.pom
+            target/appium-scroll-utils-*.jar.asc
+            target/appium-scroll-utils-*-sources.jar.asc
+            target/appium-scroll-utils-*-javadoc.jar.asc
+            target/appium-scroll-utils-*.pom.asc
+        
