@@ -34,6 +34,10 @@
         <tag>HEAD</tag>
     </scm>
 
+    <distributionManagement>
+        <downloadUrl>https://github.com/ahmedraafat2/appium-scroll-utils/releases</downloadUrl>
+    </distributionManagement>
+
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
