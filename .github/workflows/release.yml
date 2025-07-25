@@ -1,4 +1,4 @@
-name: Publish to Maven Central (via Central Portal)
+name: Release to GitHub & Maven Central
 
 on:
   push:
@@ -6,57 +6,71 @@ on:
       - 'v*'
 
 jobs:
-  publish:
-    name: Publish Package
+  release:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 11
+          java-version: 17
 
-      - name: Import GPG key
+      - name: Build and package
+        run: mvn clean package source:jar javadoc:jar -DskipTests
+
+      - name: Import GPG Key
         run: |
-          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | base64 --decode | gpg --batch --import
-        env:
-          GPG_TTY: $(tty)
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-keys
 
-      - name: Set GPG Key ID
-        id: gpg
-        run: |
-          echo "key_id=$(gpg --list-keys --with-colons | grep pub | cut -d ':' -f5)" >> $GITHUB_OUTPUT
-
-      - name: Build and sign artifacts
-        run: |
-          mvn clean install -Psign-artifacts \
-            -Dgpg.keyname=${{ steps.gpg.outputs.key_id }} \
-            -Dgpg.passphrase=${{ secrets.MAVEN_GPG_PASSPHRASE }} \
-            -Dgpg.executable=gpg \
-            -Dgpg.secretKeyring=~/.gnupg/secring.gpg
-
-      - name: Prepare central-bundle.zip
+      - name: Sign artifacts
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          ARTIFACT_ID="appium-scroll-utils"
-          mkdir -p "$ARTIFACT_ID/$VERSION"
-          cp "target/$ARTIFACT_ID-$VERSION.jar" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION.jar.asc" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION-sources.jar" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION-sources.jar.asc" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION-javadoc.jar" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION-javadoc.jar.asc" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION.pom" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION.pom.asc" "$ARTIFACT_ID/$VERSION/"
-          zip -r central-bundle.zip "$ARTIFACT_ID"
+          cp pom.xml target/appium-scroll-utils-$VERSION.pom
+          for file in target/appium-scroll-utils-$VERSION*.{jar,pom}; do
+            gpg --batch --yes --armor --pinentry-mode loopback \
+              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+              --output "$file.asc" --detach-sign "$file"
+          done
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            target/appium-scroll-utils-*.jar
+            target/appium-scroll-utils-*.pom
+            target/appium-scroll-utils-*.jar.asc
+            target/appium-scroll-utils-*.pom.asc
+
+      - name: Prepare variables
+        id: vars
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          GROUP_PATH="io/github/ahmedraafat2/appium-scroll-utils/$VERSION"
+          echo "target_path=target/$GROUP_PATH" >> $GITHUB_OUTPUT
+
+      - name: Create target path and move files
+        run: |
+          mkdir -p ${{ steps.vars.outputs.target_path }}
+          cp target/appium-scroll-utils-${{ steps.vars.outputs.VERSION }}* \
+            ${{ steps.vars.outputs.target_path }}
+
+      - name: Create zip bundle
+        run: |
+          cd "${{ steps.vars.outputs.target_path }}"
+          zip -r ../../../central-bundle.zip .
 
 
-      - name: Upload bundle to Central Portal
+      - name: Upload bundle to Maven Central
         run: |
           curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
             -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
-            -F "bundle=@central-bundle.zip"
+            -F "bundle=@../../../central-bundle.zip"
