@@ -1,12 +1,17 @@
 name: Release to GitHub & Maven Central
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -14,31 +19,54 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: 17
 
-      - name: Build and package
-        run: mvn -B clean deploy -DskipTests -Prelease
 
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Import GPG Key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-keys
 
-      - name: Sign Artifacts
-        run: mvn -B verify -Psign-artifacts -DskipTests
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/*.jar
-            target/*.pom
-            target/*.asc
+            target/appium-scroll-utils-*.jar
+            target/appium-scroll-utils-*-sources.jar
+            target/appium-scroll-utils-*-javadoc.jar
+            target/appium-scroll-utils-*.pom
+            target/appium-scroll-utils-*.asc
+            
 
-      - name: Publish to Maven Central via Central Portal
-        uses: sonatype-central/publish-release@v1
-        with:
-          coordinates: 'io.github.ahmedraafat2:appium-scroll-utils'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and deploy to Maven Central
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          # إعداد إعدادات Maven
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>ossrh</id>
+                <username>\${OSSRH_USERNAME}</username>
+                <password>\${OSSRH_PASSWORD}</password>
+              </server>
+            </servers>
+            <profiles>
+              <profile>
+                <id>gpg</id>
+                <properties>
+                  <gpg.passphrase>\${GPG_PASSPHRASE}</gpg.passphrase>
+                </properties>
+              </profile>
+            </profiles>
+          </settings>
+          EOF
+
+          # تنفيذ عملية النشر
+          mvn clean deploy -DskipTests -P gpg

@@ -5,15 +5,17 @@
 
     <groupId>io.github.ahmedraafat2</groupId>
     <artifactId>appium-scroll-utils</artifactId>
-    <version>1.0.34</version>
+    <version>1.0.35</version>
+    <packaging>jar</packaging>
+
     <name>Appium Scroll Utils</name>
-    <description>Utilities for scrolling using Appium</description>
-    <url>https://github.com/AhmedRaafat2/appium-scroll-utils</url>
+    <description>Utility library for scroll gestures in Appium</description>
+    <url>https://github.com/ahmedraafat2/appium-scroll-utils</url>
 
     <licenses>
         <license>
-            <name>MIT License</name>
-            <url>https://opensource.org/licenses/MIT</url>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
 
@@ -21,28 +23,31 @@
         <developer>
             <id>ahmedraafat2</id>
             <name>Ahmed Raafat</name>
-            <url>https://github.com/AhmedRaafat2</url>
+            <url>https://github.com/ahmedraafat2</url>
         </developer>
     </developers>
 
     <scm>
-        <url>https://github.com/AhmedRaafat2/appium-scroll-utils</url>
-        <connection>scm:git:git://github.com/AhmedRaafat2/appium-scroll-utils.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:AhmedRaafat2/appium-scroll-utils.git</developerConnection>
+        <connection>scm:git:https://github.com/ahmedraafat2/appium-scroll-utils.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/ahmedraafat2/appium-scroll-utils.git</developerConnection>
+        <url>https://github.com/ahmedraafat2/appium-scroll-utils</url>
         <tag>HEAD</tag>
     </scm>
-
+    <!-- إعدادات النشر على Maven Central -->
     <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
         <repository>
-            <id>central</id>
-            <name>Maven Central</name>
-            <url>https://repo1.maven.org/maven2</url>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
     <build>
         <plugins>
-            <!-- Signing -->
+            <!-- إضافة maven-gpg-plugin للتوقيع -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
@@ -58,29 +63,17 @@
                 </executions>
             </plugin>
 
-            <!-- Central publishing metadata -->
+            <!-- إضافة nexus-staging-maven-plugin للنشر -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals><goal>jar</goal></goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals><goal>jar</goal></goals>
-                    </execution>
-                </executions>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.13</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -103,6 +96,5 @@
             <version>4.22.0</version>
         </dependency>
     </dependencies>
-
 
 </project>
