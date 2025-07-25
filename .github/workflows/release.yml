@@ -40,6 +40,9 @@ jobs:
               --output "$file.asc" --detach-sign "$file"
           done
 
+
+
+
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
@@ -63,11 +66,18 @@ jobs:
           cp target/appium-scroll-utils-${{ steps.vars.outputs.VERSION }}* \
             ${{ steps.vars.outputs.target_path }}
 
-      - name: Create zip bundle
+      - name: Generate checksum files
         run: |
           cd "${{ steps.vars.outputs.target_path }}"
-          zip -r central-bundle.zip .
-          mv central-bundle.zip ${{ github.workspace }}/central-bundle.zip
+          for file in *.{jar,pom}; do
+            md5sum "$file" > "$file.md5"
+            sha1sum "$file" > "$file.sha1"
+          done
+
+      - name: Create zip bundle
+        run: |
+          cd target
+          zip -r ../central-bundle.zip io
 
       - name: Upload bundle to Maven Central
         run: |
