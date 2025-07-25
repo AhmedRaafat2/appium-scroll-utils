@@ -5,7 +5,7 @@
 
     <groupId>io.github.ahmedraafat2</groupId>
     <artifactId>appium-scroll-utils</artifactId>
-    <version>1.0.60</version>
+    <version>1.0.61</version>
     <packaging>jar</packaging>
 
     <name>Appium Scroll Utils</name>
