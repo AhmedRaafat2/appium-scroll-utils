@@ -51,12 +51,15 @@ jobs:
 
       - name: Create central-bundle.zip
         run: |
-          mkdir -p bundle
-          cp target/appium-scroll-utils-*.jar bundle/
-          cp target/appium-scroll-utils-*.jar.asc bundle/
-          cp target/appium-scroll-utils-*.pom bundle/
-          cp target/appium-scroll-utils-*.pom.asc bundle/
-          zip -r central-bundle.zip bundle
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          ARTIFACT_ID="appium-scroll-utils"
+          mkdir -p "$ARTIFACT_ID/$VERSION"
+          cp "target/$ARTIFACT_ID-$VERSION.jar" "$ARTIFACT_ID/$VERSION/"
+          cp "target/$ARTIFACT_ID-$VERSION.jar.asc" "$ARTIFACT_ID/$VERSION/"
+          cp "target/$ARTIFACT_ID-$VERSION.pom" "$ARTIFACT_ID/$VERSION/"
+          cp "target/$ARTIFACT_ID-$VERSION.pom.asc" "$ARTIFACT_ID/$VERSION/"
+          zip -r central-bundle.zip "$ARTIFACT_ID"
+      
 
       - name: Deploy bundle via API
         run: |
