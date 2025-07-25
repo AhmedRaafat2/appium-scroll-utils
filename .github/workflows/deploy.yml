@@ -31,9 +31,6 @@ jobs:
       - name: Sign Artifacts
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          for ext in jar jar.asc pom pom.asc sources.jar sources.jar.asc javadoc.jar javadoc.jar.asc; do
-            touch target/appium-scroll-utils-$VERSION.$ext
-          done
           for file in target/appium-scroll-utils-$VERSION.jar target/appium-scroll-utils-$VERSION-sources.jar target/appium-scroll-utils-$VERSION-javadoc.jar target/appium-scroll-utils-$VERSION.pom; do
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
