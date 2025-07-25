@@ -66,11 +66,11 @@ jobs:
       - name: Create zip bundle
         run: |
           cd "${{ steps.vars.outputs.target_path }}"
-          zip -r ../../../central-bundle.zip .
-
+          zip -r central-bundle.zip .
+          mv central-bundle.zip ${{ github.workspace }}/central-bundle.zip
 
       - name: Upload bundle to Maven Central
         run: |
           curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
             -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
-            -F "bundle=@../../../central-bundle.zip"
+            -F "bundle=@central-bundle.zip"
