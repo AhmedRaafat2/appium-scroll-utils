@@ -72,26 +72,15 @@ jobs:
         with:
           files: ${{ steps.vars.outputs.target_path }}/*
 
-#      - name: Create zip bundle
-#        run: |
-#          cd target
-#          zip -r ../appium-scroll-utils-bundle.zip io
-#
-#
-#      - name: Upload bundle to Maven Central
-#        run: |
-#          curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
-#            -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
-#            -F "bundle=@appium-scroll-utils-bundle.zip"
-
-
       - name: Create zip bundle
         run: |
           cd target
-          zip -r ../Appium Scroll Utils.zip io
+          zip -r ../appium-scroll-utils-bundle.zip io
+
 
       - name: Upload bundle to Maven Central
         run: |
           curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
             -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
-            -F "bundle=@Appium Scroll Utils.zip"
+            -F "bundle=@appium-scroll-utils-bundle.zip"
+
