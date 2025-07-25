@@ -44,12 +44,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/appium-scroll-utils-*.jar
-            target/appium-scroll-utils-*-sources.jar
-            target/appium-scroll-utils-*-javadoc.jar
-            target/appium-scroll-utils-*.pom
-            target/appium-scroll-utils-*.jar.asc
-            target/appium-scroll-utils-*-sources.jar.asc
-            target/appium-scroll-utils-*-javadoc.jar.asc
-            target/appium-scroll-utils-*.pom.asc
+            target/appium-scroll-utils-1.0.2.jar
+            target/appium-scroll-utils-1.0.2-sources.jar
+            target/appium-scroll-utils-1.0.2-javadoc.jar
+            target/appium-scroll-utils-1.0.2.pom
+            target/appium-scroll-utils-1.0.2.jar.asc
+            target/appium-scroll-utils-1.0.2-sources.jar.asc
+            target/appium-scroll-utils-1.0.2-javadoc.jar.asc
+            target/appium-scroll-utils-1.0.2.pom.asc
+          
         
