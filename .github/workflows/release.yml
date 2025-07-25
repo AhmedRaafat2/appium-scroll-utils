@@ -1,76 +1,90 @@
-name: Release to GitHub & Maven Central
+name: Publish to Maven Central
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
+          distribution: 'temurin'
+          java-version: 11
 
-      - name: Build and package
-        run: mvn clean verify -DskipTests
+      - name: Build with Maven
+        run: mvn clean install -DskipTests
 
-      - name: Import GPG Key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
-          gpg --list-keys
-
-      - name: Generate and Sign Artifacts + Checksums
+      - name: Set version and paths
+        id: vars
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           ARTIFACT_ID="appium-scroll-utils"
-          GROUP_PATH="io/github/ahmedraafat2/$ARTIFACT_ID/$VERSION"
-          mkdir -p "$GROUP_PATH"
+          GROUP_ID="io.github.ahmedraafat2"
+          GROUP_PATH=$(echo "$GROUP_ID" | tr '.' '/')
+          TARGET_PATH="$GROUP_PATH/$ARTIFACT_ID/$VERSION"
 
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
+          echo "group_id=$GROUP_ID" >> "$GITHUB_OUTPUT"
+          echo "group_path=$GROUP_PATH" >> "$GITHUB_OUTPUT"
+          echo "target_path=$TARGET_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p ${{ steps.vars.outputs.target_path }}
+
+          cp target/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.jar ${{ steps.vars.outputs.target_path }}/
+          cp target/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-sources.jar ${{ steps.vars.outputs.target_path }}/
+          cp target/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-javadoc.jar ${{ steps.vars.outputs.target_path }}/
+          cp pom.xml ${{ steps.vars.outputs.target_path }}/${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.pom
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-secret-keys
+
+      - name: Sign + checksum files
+        run: |
           FILES=(
-            "target/$ARTIFACT_ID-$VERSION.jar"
-            "target/$ARTIFACT_ID-$VERSION-sources.jar"
-            "target/$ARTIFACT_ID-$VERSION-javadoc.jar"
-            "target/$ARTIFACT_ID-$VERSION.pom"
+            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.jar"
+            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-sources.jar"
+            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}-javadoc.jar"
+            "${{ steps.vars.outputs.artifact_id }}-${{ steps.vars.outputs.version }}.pom"
           )
 
+          cd "${{ steps.vars.outputs.target_path }}"
           for file in "${FILES[@]}"; do
-            cp "$file" "$GROUP_PATH/"
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
-              --output "$GROUP_PATH/$(basename "$file").asc" --detach-sign "$file"
+              --output "$file.asc" --detach-sign "$file"
 
-            md5sum "$file" | cut -d ' ' -f 1 > "$GROUP_PATH/$(basename "$file").md5"
-            sha1sum "$file" | cut -d ' ' -f 1 > "$GROUP_PATH/$(basename "$file").sha1"
+            md5sum "$file" | cut -d ' ' -f 1 > "$file.md5"
+            sha1sum "$file" | cut -d ' ' -f 1 > "$file.sha1"
           done
 
-          cp pom.xml "$GROUP_PATH/$ARTIFACT_ID-$VERSION.pom"
+      - name: Create zip bundle
+        run: |
+          cd "${{ steps.vars.outputs.group_path }}"
+          zip -r ../../central-bundle.zip .
 
-      - name: Upload to GitHub Releases
+      - name: Upload to Maven Central
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-bundle
+          path: central-bundle.zip
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            target/appium-scroll-utils-*.jar
-            target/appium-scroll-utils-*.pom
-            target/appium-scroll-utils-*-sources.jar
-            target/appium-scroll-utils-*-javadoc.jar
-
-      - name: Create central-bundle.zip
-        run: |
-          zip -r central-bundle.zip io
-
-      - name: Deploy bundle via API
-        run: |
-          curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
-            -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
-            -F "bundle=@central-bundle.zip"
+          name: "Release ${{ steps.vars.outputs.version }}"
+          tag_name: "v${{ steps.vars.outputs.version }}"
+          files: central-bundle.zip
