@@ -1,4 +1,4 @@
-name: Release to GitHub & Maven Central
+name: Publish to Maven Central
 
 on:
   push:
@@ -6,62 +6,51 @@ on:
       - 'v*'
 
 jobs:
-  release:
+  publish:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: 17
 
-      - name: Build and package
-        run: mvn clean package source:jar javadoc:jar -DskipTests
-
-      - name: Import GPG Key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
-          gpg --list-keys
-
-      - name: Prepare variables
+      - name: Extract version and target path
         id: vars
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          VERSION="${GITHUB_REF#refs/tags/v}"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          GROUP_PATH="io/github/ahmedraafat2/appium-scroll-utils/$VERSION"
-          echo "target_path=target/$GROUP_PATH" >> $GITHUB_OUTPUT
+          TARGET_PATH=target/io/github/ahmedraafat2/appium-scroll-utils/$VERSION
+          echo "target_path=$TARGET_PATH" >> $GITHUB_OUTPUT
 
-      - name: Create final path and sign + checksum
+      - name: Build with Maven
+        run: mvn -B clean install -Pcentral-release
+
+      - name: Create target path and move files
         run: |
           mkdir -p ${{ steps.vars.outputs.target_path }}
-          cd target
+          cp target/appium-scroll-utils-${{ steps.vars.outputs.VERSION }}* \
+            ${{ steps.vars.outputs.target_path }}
 
-          VERSION="${{ steps.vars.outputs.VERSION }}"
-          FINAL="io/github/ahmedraafat2/appium-scroll-utils/$VERSION"
-
-          # Copy files manually
-          cp appium-scroll-utils-$VERSION.jar                 $FINAL/
-          cp appium-scroll-utils-$VERSION-javadoc.jar         $FINAL/
-          cp appium-scroll-utils-$VERSION-sources.jar         $FINAL/
-          cp ../pom.xml                                       $FINAL/appium-scroll-utils-$VERSION.pom
-
-          cd $FINAL
-
-          # Sign artifacts
+      - name: Sign artifacts with GPG
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          cd "${{ steps.vars.outputs.target_path }}"
           for file in *.jar *.pom; do
-            gpg --batch --yes --armor --pinentry-mode loopback \
-              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
-              --output "$file.asc" --detach-sign "$file"
+            gpg --batch --yes --passphrase "$GPG_PASSPHRASE" \
+              -a -b "$file"
           done
 
-          # Generate checksum from original files
+      - name: Generate checksum files
+        run: |
+          cd "${{ steps.vars.outputs.target_path }}"
           for file in *.jar *.pom; do
             md5sum "$file" > "$file.md5"
             sha1sum "$file" > "$file.sha1"
@@ -69,20 +58,11 @@ jobs:
 
       - name: Create zip bundle
         run: |
-          cd target
-          zip -r ../central-bundle.zip io
+          cd "${{ steps.vars.outputs.target_path }}"
+          zip -r ../../../central-bundle.zip .
 
       - name: Upload bundle to Maven Central
         run: |
           curl -u "${{ secrets.MAVEN_CENTRAL_USERNAME }}:${{ secrets.MAVEN_CENTRAL_TOKEN }}" \
             -X POST "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC" \
-            -F "bundle=@central-bundle.zip"
-
-      - name: Upload to GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            target/appium-scroll-utils-*.jar
-            target/appium-scroll-utils-*.pom
-            target/appium-scroll-utils-*.jar.asc
-            target/appium-scroll-utils-*.pom.asc
+            -F "bundle=@../../../central-bundle.zip"
