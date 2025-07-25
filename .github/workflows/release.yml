@@ -42,11 +42,19 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "use-agent" >> ~/.gnupg/gpg.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          gpgconf --kill gpg-agent
+          gpgconf --launch gpg-agent
+
           cd "${{ steps.vars.outputs.target_path }}"
           for file in *.jar *.pom; do
-            gpg --batch --yes --passphrase "$GPG_PASSPHRASE" \
+            gpg --batch --yes --pinentry-mode loopback \
+              --passphrase "$GPG_PASSPHRASE" \
               -a -b "$file"
           done
+      
 
       - name: Generate checksum files
         run: |
