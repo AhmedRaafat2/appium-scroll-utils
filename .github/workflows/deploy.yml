@@ -1,16 +1,16 @@
-name: Deploy to Maven Central
+name: Deploy to Central via GitHub Release
 
 on:
   push:
     tags:
-      - 'v*'  # ينفذ فقط عند عمل tag زي v1.0.0
+      - 'v*'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # ضروري علشان يرفع لـ GitHub Releases
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -22,25 +22,31 @@ jobs:
           java-version: '17'
 
       - name: Build Project
-        run: mvn clean package -DskipTests=true
+        run: mvn clean install -DskipTests=true
 
-      - name: Import GPG key
+      - name: Import GPG Key
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
 
       - name: Sign Artifacts
         run: |
-          for file in target/*.jar target/*.pom; do
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          for ext in jar jar.asc pom pom.asc sources.jar sources.jar.asc javadoc.jar javadoc.jar.asc; do
+            touch target/appium-scroll-utils-$VERSION.$ext
+          done
+          for file in target/appium-scroll-utils-$VERSION.jar target/appium-scroll-utils-$VERSION-sources.jar target/appium-scroll-utils-$VERSION-javadoc.jar target/appium-scroll-utils-$VERSION.pom; do
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
               --output "$file.asc" --detach-sign "$file"
           done
 
-      - name: Upload to GitHub Releases
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/*.jar
-            target/*.jar.asc
-            target/*.pom
-            target/*.pom.asc
+            target/appium-scroll-utils-*.jar
+            target/appium-scroll-utils-*.jar.asc
+            target/appium-scroll-utils-*.pom
+            target/appium-scroll-utils-*.pom.asc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
