@@ -1,7 +1,9 @@
-name: Publish to Maven Central
+name: Release to GitHub & Maven Central
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
