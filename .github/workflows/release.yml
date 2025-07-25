@@ -30,9 +30,10 @@ jobs:
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
           gpg --list-keys
 
-      - name: Sign Artifacts
+      - name: Generate and Sign Artifacts
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          mvn help:effective-pom -Doutput=target/appium-scroll-utils-$VERSION.pom
           for file in target/appium-scroll-utils-$VERSION*.{jar,pom}; do
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
@@ -44,6 +45,7 @@ jobs:
         with:
           files: |
             target/appium-scroll-utils-*.jar
+            target/appium-scroll-utils-*-sources.jar
+            target/appium-scroll-utils-*-javadoc.jar
             target/appium-scroll-utils-*.pom
-            target/appium-scroll-utils-*.jar.asc
-            target/appium-scroll-utils-*.pom.asc
+            target/appium-scroll-utils-*.asc
