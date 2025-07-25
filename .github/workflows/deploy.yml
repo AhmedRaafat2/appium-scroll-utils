@@ -1,0 +1,49 @@
+name: Release to GitHub for Central Publishing
+
+on:
+  push:
+    tags:
+      - 'v*'  # مثل v1.0.2
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build and package
+        run: mvn clean package -DskipTests=true
+
+      - name: Sign Artifacts
+        run: |
+          for file in target/*.jar target/*.pom; do
+            gpg --batch --yes --armor --pinentry-mode loopback \
+              --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
+              --output "$file.asc" --detach-sign "$file"
+          done
+
+      - name: Generate release.properties
+        run: |
+          echo "coordinates=io.github.ahmedraafat2:appium-scroll-utils:jar:${GITHUB_REF_NAME#v}" > release.properties
+          echo "scm.url=https://github.com/ahmedraafat2/appium-scroll-utils" >> release.properties
+          echo "scm.connection=scm:git:https://github.com/ahmedraafat2/appium-scroll-utils.git" >> release.properties
+          echo "scm.developerConnection=scm:git:ssh://git@github.com/ahmedraafat2/appium-scroll-utils.git" >> release.properties
+
+      - name: Upload release to GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            target/appium-scroll-utils-*.jar
+            target/appium-scroll-utils-*.jar.asc
+            target/appium-scroll-utils-*.pom
+            target/appium-scroll-utils-*.pom.asc
+            release.properties
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
