@@ -35,6 +35,11 @@
         <tag>HEAD</tag>
     </scm>
 
+    <organization>
+        <name>io.github.ahmedraafat2</name>
+        <url>https://github.com/ahmedraafat2</url>
+    </organization>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
