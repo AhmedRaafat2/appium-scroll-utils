@@ -54,12 +54,6 @@ jobs:
           cp "target/$ARTIFACT_ID-$VERSION.pom.asc" "$ARTIFACT_ID/$VERSION/"
           zip -r central-bundle.zip "$ARTIFACT_ID"
 
-      - name:
-          Debug: Check contents
-        run: |
-          ls -lh
-          unzip -l central-bundle.zip
-      
 
       - name: Upload bundle to Central Portal
         run: |
