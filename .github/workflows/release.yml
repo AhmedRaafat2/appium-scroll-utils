@@ -23,22 +23,38 @@ jobs:
           java-version: 17
 
       - name: Build and package
-        run: mvn clean package source:jar javadoc:jar -DskipTests
+        run: mvn clean verify -DskipTests
 
       - name: Import GPG Key
         run: |
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
           gpg --list-keys
 
-      - name: Generate and Sign Artifacts
+      - name: Generate and Sign Artifacts + Checksums
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          cp pom.xml target/appium-scroll-utils-$VERSION.pom
-          for file in target/appium-scroll-utils-$VERSION*.{jar,pom}; do
+          ARTIFACT_ID="appium-scroll-utils"
+          GROUP_PATH="io/github/ahmedraafat2/$ARTIFACT_ID/$VERSION"
+          mkdir -p "$GROUP_PATH"
+
+          FILES=(
+            "target/$ARTIFACT_ID-$VERSION.jar"
+            "target/$ARTIFACT_ID-$VERSION-sources.jar"
+            "target/$ARTIFACT_ID-$VERSION-javadoc.jar"
+            "target/$ARTIFACT_ID-$VERSION.pom"
+          )
+
+          for file in "${FILES[@]}"; do
+            cp "$file" "$GROUP_PATH/"
             gpg --batch --yes --armor --pinentry-mode loopback \
               --passphrase "${{ secrets.GPG_PASSPHRASE }}" \
-              --output "$file.asc" --detach-sign "$file"
+              --output "$GROUP_PATH/$(basename "$file").asc" --detach-sign "$file"
+
+            md5sum "$file" | cut -d ' ' -f 1 > "$GROUP_PATH/$(basename "$file").md5"
+            sha1sum "$file" | cut -d ' ' -f 1 > "$GROUP_PATH/$(basename "$file").sha1"
           done
+
+          cp pom.xml "$GROUP_PATH/$ARTIFACT_ID-$VERSION.pom"
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2
@@ -46,20 +62,12 @@ jobs:
           files: |
             target/appium-scroll-utils-*.jar
             target/appium-scroll-utils-*.pom
-            target/appium-scroll-utils-*.jar.asc
-            target/appium-scroll-utils-*.pom.asc
+            target/appium-scroll-utils-*-sources.jar
+            target/appium-scroll-utils-*-javadoc.jar
 
       - name: Create central-bundle.zip
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          ARTIFACT_ID="appium-scroll-utils"
-          mkdir -p "$ARTIFACT_ID/$VERSION"
-          cp "target/$ARTIFACT_ID-$VERSION.jar" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION.jar.asc" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION.pom" "$ARTIFACT_ID/$VERSION/"
-          cp "target/$ARTIFACT_ID-$VERSION.pom.asc" "$ARTIFACT_ID/$VERSION/"
-          zip -r central-bundle.zip "$ARTIFACT_ID"
-      
+          zip -r central-bundle.zip io
 
       - name: Deploy bundle via API
         run: |
